@@ -13,52 +13,33 @@ function MyTabs() {
     return(
         <Tab.Navigator
             initialRouteName="Home"
-            screenOptions={{
-                tabBarActiveTintColor: 'blue',
-                tabBarInactiveTintColor: 'gray'
-            }}
-        >
-            <Tab.Screen name="Home" component={HomeScreen} 
-                options={{
-                    //headerShown: false
-                    tabBarIcon: (color) => {
-                        return <Feather name="home" color={color} size={20} />
-                    }
-                }}
-            />
-            <Tab.Screen name="Map" component={HomeScreen} 
-                options={{
-                    //headerShown: false
-                    tabBarIcon: (color) => {
-                        return <Feather name="map" color={color} size={20} />
-                    }
-                }}
-            />
-            <Tab.Screen name="Analytics" component={HomeScreen} 
-                options={{
-                    //headerShown: false
-                    tabBarIcon: (color) => {
-                        return <Feather name="bar-chart-2" color={color} size={20} />
-                    }
-                }}
-            />
-            <Tab.Screen name="History" component={HomeScreen} 
-                options={{
-                    //headerShown: false
-                    tabBarIcon: (color) => {
-                        return <Feather name="clock" color={color} size={20} />
-                    }
-                }}
-            />
-            <Tab.Screen name="Profile" component={HomeScreen} 
-                options={{
-                    //headerShown: false
-                    tabBarIcon: (color) => {
-                        return <Feather name="user" color={color} size={20} />
-                    }
-                }}
-            />
+            screenOptions={({ route }) => ({
+                tabBarIcon: ({color, size }) => {
+                    let iconName;
 
+                    if (route.name === 'Home') {
+                        iconName = 'home';
+                    } else if (route.name === 'Map') {
+                        iconName = 'map';
+                    } else if (route.name === 'Analytics') {
+                        iconName = 'bar-chart-2';
+                    } else if (route.name === 'History') {
+                        iconName = 'clock';
+                    } else if (route.name === 'Profile') {
+                        iconName = 'user';
+                    }
+
+                    return <Feather name={iconName} size={size} color={color} />;
+                },
+                tabBarActiveTintColor: 'blue',
+                tabBarInactiveTintColor: 'gray',
+            })}
+        >
+            <Tab.Screen name="Home" component={HomeScreen} />
+            <Tab.Screen name="Map" component={HomeScreen} />
+            <Tab.Screen name="Analytics" component={HomeScreen} />
+            <Tab.Screen name="History" component={HomeScreen} />
+            <Tab.Screen name="Profile" component={HomeScreen} />
         </Tab.Navigator>
     );
 }
