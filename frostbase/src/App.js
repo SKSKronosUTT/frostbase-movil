@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navigation from "./navigation/Navigation";
 
 import SplashScreen from "./screens/SplashScreen";
+import LoginScreen from './screens/LoginScreen';
 
 export default function App() {
 
@@ -18,6 +19,6 @@ export default function App() {
   }
 
   return (
-    <Navigation />
+    <LoginScreen />
   );
 }
