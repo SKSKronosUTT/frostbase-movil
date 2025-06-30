@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-export default function HistoryScreen() {
+const HistoryScreen = () => {
   const transactions = [
     {
       id: 1,
@@ -12,10 +12,10 @@ export default function HistoryScreen() {
       time: "10:34 AM",
       status: "confirmed"
     },
-    // Puedes agregar más transacciones aquí
+   
   ];
 
-  function TransactionCard({ store, address, date, time, status }) {
+  const TransactionCard = ({ store, address, date, time, status }) => {
     return (
       <View style={styles.transactionCard}>
         <View style={styles.transactionContent}>
@@ -42,21 +42,22 @@ export default function HistoryScreen() {
         </View>
       </View>
     );
-  }
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.humiditySection}>
-          <Text style={styles.weatherTitle}>Humidity</Text>
-          <Text style={styles.weatherValue}>75%</Text>
-        </View>
-        <View style={styles.temperatureSection}>
-          <Text style={styles.weatherTitle}>Temperature</Text>
-          <Text style={styles.temperatureValue}>-50°</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+          <View style={styles.humiditySection}>
+            <Text style={styles.weatherTitle}>Humidity</Text>
+            <Text style={styles.weatherValue}>75%</Text>
+          </View>
+          <View style={styles.temperatureSection}>
+            <Text style={styles.weatherTitle}>Temperature</Text>
+            <Text style={styles.temperatureValue}>-50°</Text>
+          </View>
         </View>
       </View>
-
       <ScrollView contentContainerStyle={styles.transactionsList}>
         {transactions.map((t) => (
           <TransactionCard key={t.id} {...t} />
@@ -64,7 +65,7 @@ export default function HistoryScreen() {
       </ScrollView>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -78,10 +79,10 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 250,
     backgroundColor: '#7BB8E0',
-    borderBottomLeftRadius: 20,   // Redondeo solo abajo
-    borderBottomRightRadius: 20,  // Redondeo solo abajo
-    borderTopLeftRadius: 0,       // Arriba plano
-    borderTopRightRadius: 0,      // Arriba plano
+    borderBottomLeftRadius: 20,   
+    borderBottomRightRadius: 20,  
+    borderTopLeftRadius: 0,       
+    borderTopRightRadius: 0,      
     paddingTop: 40,
     paddingHorizontal: 20,
     justifyContent: 'center'
@@ -106,13 +107,13 @@ const styles = StyleSheet.create({
   transactionsList: {
     padding: 16,
     paddingBottom: 130,
-    width: '100%', // Asegurar que ocupe todo el ancho
+    width: '100%', 
   },
   transactionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
-    paddingVertical: 20, // Más padding vertical
-    paddingHorizontal: 16, // Más padding horizontal
+    paddingVertical: 20, 
+    paddingHorizontal: 16, 
     marginBottom: 20,
     borderWidth: 0,
     shadowColor: '#539DF3',
@@ -120,19 +121,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,
     elevation: 2,
-    width: '100%', // Asegurar que la tarjeta ocupe todo el ancho disponible
+    width: '100%', 
   },
   transactionContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    width: '100%', // Asegurar que el contenido ocupe todo el ancho
+    width: '100%', 
   },
   transactionLeft: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     flex: 1,
-    marginRight: 16, // Margen derecho para separar del lado derecho
+    marginRight: 16,
   },
   transactionIcon: {
     width: 48,
@@ -141,40 +142,40 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12, // Separación del ícono con el texto
-    flexShrink: 0, // Evitar que el ícono se encoja
+    marginRight: 12, 
+    flexShrink: 0,
   },
   transactionDetails: {
     flex: 1,
     justifyContent: 'center',
-    minHeight: 48, // Altura mínima para alinear con el ícono
+    minHeight: 48, 
   },
   storeName: {
     fontSize: 16,
     fontWeight: '700',
     color: '#222',
     marginBottom: 4,
-    lineHeight: 20, // Altura de línea específica
+    lineHeight: 20, 
   },
   storeAddress: {
     fontSize: 13,
     color: '#444',
-    lineHeight: 18, // Altura de línea específica para mejor legibilidad
+    lineHeight: 18, 
     flexWrap: 'wrap',
   },
   transactionRight: {
     alignItems: 'flex-end',
     justifyContent: 'center',
-    minWidth: 90, // Ancho mínimo más generoso
-    flexShrink: 0, // Evitar que se encoja
-    minHeight: 48, // Altura mínima para alinear con el ícono
+    minWidth: 90, 
+    flexShrink: 0, 
+    minHeight: 48, 
   },
   statusBadge: {
     backgroundColor: 'rgba(0,255,148,0.2)',
-    borderRadius: 6, // Un poco más redondeado
+    borderRadius: 6, 
     paddingHorizontal: 8,
     paddingVertical: 3,
-    marginBottom: 8, // Más separación
+    marginBottom: 8,
   },
   statusText: {
     fontSize: 10,
@@ -194,3 +195,5 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
 });
+
+export default HistoryScreen;
