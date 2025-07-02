@@ -1,10 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 
 //import Header
 import Header from "../components/Header";
 
 const HomeScreen = () => {
+
+    const [onTrip, setOnTrip] = useState(false);
+
+    function handleTrip(){
+        setOnTrip(!onTrip);
+    }
 
     return (
         <View>
@@ -13,18 +19,20 @@ const HomeScreen = () => {
 
             <View style={styles.body}>
                 {/* Botón para iniciar el viaje */}
-                <TouchableOpacity style={styles.button}>
-                    <Text style={styles.buttonText}>START TRIP</Text>
+                <TouchableOpacity style={styles.button} onPress={handleTrip}>
+                    <Text style={styles.buttonText}>
+                        {onTrip ? "END TRIP" : "START TRIP"}
+                    </Text>
                 </TouchableOpacity>
 
-                {/* Logo FrostyDude */}
-                <Image 
-                    style={styles.logo}
-                    source={require('../assets/images/FROSTYDUDE.png')}
-                />
+                {/* Logo FrostyDude dinámico cuando no está en viaje */}
+                {!onTrip && (
+                    <Image 
+                        style={styles.logo}
+                        source={require('../assets/images/FROSTYDUDE.png')}
+                    />
+                )}
             </View>
-            
-
         </View>
     )
 }
