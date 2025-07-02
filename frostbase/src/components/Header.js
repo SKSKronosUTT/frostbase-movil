@@ -2,14 +2,27 @@ import { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 const Header = () => {
-    {/* Estas variables sirven para modificar los valores dinámicamente después con la API */}
-    const [humedity, setHumedity] = useState('75');
-    const [temperature, setTemperature] = useState('5');
+    const [humidity, setHumidity] = useState(75);
+    const [temperature, setTemperature] = useState(5.0);
+
+    {/* Código para simular los valores cada 2 segundos */}
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const humidityVariation = (Math.random() * 4 - 2).toFixed(0);
+            const tempVariation = (Math.random().toFixed(1) * 1 - 0.5).toFixed(1);
+            
+            setHumidity(humidity + parseInt(humidityVariation));
+            setTemperature(parseFloat(temperature) + parseFloat(tempVariation));
+
+        }, 2000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     return(
         <View style={styles.header}>
-            <Text style={styles.headerText}>Humedity</Text>
-            <Text style={styles.headerValue}>{humedity}%</Text>
+            <Text style={styles.headerText}>Humidity</Text>
+            <Text style={styles.headerValue}>{humidity}%</Text>
             <Text style={styles.headerText}>Temperature</Text>
             <Text style={styles.headerValue}>{temperature}° C</Text>
         </View>
