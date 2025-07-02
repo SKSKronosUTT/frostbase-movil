@@ -33,6 +33,7 @@ function MyTabs() {
                 },
                 tabBarActiveTintColor: 'blue',
                 tabBarInactiveTintColor: 'gray',
+                headerShown: false
             })}
         >
             <Tab.Screen name="Home" component={HomeScreen} />
@@ -46,8 +47,6 @@ function MyTabs() {
 
 export default function Navigation() {
     return(
-        <NavigationContainer>
-            <MyTabs />
-        </NavigationContainer>
+        <MyTabs />
     )
 }
