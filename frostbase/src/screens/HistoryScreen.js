@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import Header from '../components/Header';
 
 const HistoryScreen = () => {
   const transactions = [
@@ -46,18 +47,7 @@ const HistoryScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
-          <View style={styles.humiditySection}>
-            <Text style={styles.weatherTitle}>Humidity</Text>
-            <Text style={styles.weatherValue}>75%</Text>
-          </View>
-          <View style={styles.temperatureSection}>
-            <Text style={styles.weatherTitle}>Temperature</Text>
-            <Text style={styles.temperatureValue}>-50°</Text>
-          </View>
-        </View>
-      </View>
+      <Header />
       <ScrollView contentContainerStyle={styles.transactionsList}>
         {transactions.map((t) => (
           <TransactionCard key={t.id} {...t} />
@@ -71,38 +61,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#E2ECF5',
-    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'flex-start',
-  },
-  header: {
-    width: '100%',
-    height: 250,
-    backgroundColor: '#7BB8E0',
-    borderBottomLeftRadius: 20,   
-    borderBottomRightRadius: 20,  
-    borderTopLeftRadius: 0,       
-    borderTopRightRadius: 0,      
-    paddingTop: 40,
-    paddingHorizontal: 20,
-    justifyContent: 'center'
-  },
-  humiditySection: { marginBottom: 20 },
-  temperatureSection: {},
-  weatherTitle: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: '300'
-  },
-  weatherValue: {
-    color: 'white',
-    fontSize: 48,
-    fontWeight: '300'
-  },
-  temperatureValue: {
-    color: 'white',
-    fontSize: 48,
-    fontWeight: '300'
   },
   transactionsList: {
     padding: 16,

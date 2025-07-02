@@ -6,6 +6,7 @@ import Feather from '@expo/vector-icons/Feather';
 
 //Screens
 import HomeScreen from "../screens/HomeScreen";
+import HistoryScreen from "../screens/HistoryScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -39,7 +40,7 @@ function MyTabs() {
             <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Map" component={HomeScreen} />
             <Tab.Screen name="Analytics" component={HomeScreen} />
-            <Tab.Screen name="History" component={HomeScreen} />
+            <Tab.Screen name="History" component={HistoryScreen} />
             <Tab.Screen name="Profile" component={HomeScreen} />
         </Tab.Navigator>
     );
