@@ -18,6 +18,7 @@ const Header = () => {
 
 const styles = StyleSheet.create({
     header: {
+        marginTop: 50,
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
@@ -25,7 +26,7 @@ const styles = StyleSheet.create({
         paddingLeft: 30,
         borderBottomLeftRadius: 25,
         borderBottomRightRadius: 25,
-        backgroundColor: '#88C6E7',
+        backgroundColor: '#89B6DD',
     },
     headerText: {
         color: 'white',
