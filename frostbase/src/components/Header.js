@@ -18,11 +18,10 @@ const Header = () => {
 
 const styles = StyleSheet.create({
     header: {
-        marginTop: 50,
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
-        height: 250,
+        height: 300,
         paddingLeft: 30,
         borderBottomLeftRadius: 25,
         borderBottomRightRadius: 25,
@@ -30,12 +29,13 @@ const styles = StyleSheet.create({
     },
     headerText: {
         color: 'white',
-        fontSize: 36
+        fontSize: 36,
+        fontWeight: 300
     },
     headerValue: {
         color: 'white',
         fontSize: 48,
-        marginLeft: 20
+        marginLeft: 20,
     }
 })
 

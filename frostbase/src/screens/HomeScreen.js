@@ -32,7 +32,9 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
     body:{
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        backgroundColor: '#E2ECF5',
+        height: "100%"
     },
     button: {
         marginTop: 50,
