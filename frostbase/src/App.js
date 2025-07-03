@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import SplashScreen from "./screens/SplashScreen";
-import LoginNavigation from './navigation/LoginNavigation';
+import Navigation from './navigation/Navigation';
 
 export default function App() {
 
@@ -18,6 +18,6 @@ export default function App() {
   }
 
   return (
-    <LoginNavigation />
+    <Navigation />
   );
 }

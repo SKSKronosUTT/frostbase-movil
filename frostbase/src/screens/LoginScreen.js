@@ -1,13 +1,10 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 import { View, Image, StyleSheet, Text, TouchableOpacity, TextInput } from "react-native";
 //Icons
 import Feather from '@expo/vector-icons/Feather';
-//Navigation
-import { useNavigation } from "@react-navigation/native";
 
 
-const LoginScreen = () => {
-    const navigation = useNavigation();
+const LoginScreen = ({ navigation }) => {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -19,7 +16,10 @@ const LoginScreen = () => {
 
     const handleLogin = () => {
         {/* Aquí validar las credenciales para mandarlo a la app principal */}
-        navigation.navigate("Navigation");
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'MainApp' }],
+        });
     };
 
     return (
