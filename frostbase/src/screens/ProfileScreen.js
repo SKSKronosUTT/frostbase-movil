@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 //Icons
 import Feather from '@expo/vector-icons/Feather';
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }) => {
 
     const [name, setName] = useState('John Doe Cuevas')
     const [email, setEmail] = useState('johndoe@gmail.com')
@@ -13,6 +13,10 @@ const ProfileScreen = () => {
 
     function logout(){
         //Fuga al login
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+        });
     }
 
     return (
@@ -97,7 +101,7 @@ const styles = StyleSheet.create({
     footer:{
         flex: 1,
         justifyContent: 'flex-end',
-        paddingBottom: 200,
+        paddingBottom: 50,
         alignItems: 'center'
     },
     button: {

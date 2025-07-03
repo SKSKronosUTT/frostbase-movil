@@ -1,22 +1,25 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { NavigationContainer } from "@react-navigation/native";
 
 //Icons
 import Feather from '@expo/vector-icons/Feather';
 
 //Screens
+import LoginScreen from "../screens/LoginScreen";
 import HomeScreen from "../screens/HomeScreen";
 import HistoryScreen from "../screens/HistoryScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 function MyTabs() {
     return(
         <Tab.Navigator
             initialRouteName="Home"
             screenOptions={({ route }) => ({
-                tabBarIcon: ({color, size }) => {
+                tabBarIcon: ({ color, size }) => {
                     let iconName;
 
                     if (route.name === 'Home') {
@@ -35,7 +38,7 @@ function MyTabs() {
                 },
                 tabBarActiveTintColor: 'blue',
                 tabBarInactiveTintColor: 'gray',
-                headerShown: false
+                headerShown: false,
             })}
         >
             <Tab.Screen name="Home" component={HomeScreen} />
@@ -47,8 +50,19 @@ function MyTabs() {
     );
 }
 
+function MyStack() {
+    return (
+        <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="MainApp" component={MyTabs} />
+        </Stack.Navigator>
+    );
+}
+
 export default function Navigation() {
-    return(
-        <MyTabs />
-    )
+    return (
+        <NavigationContainer>
+            <MyStack />
+        </NavigationContainer>
+    );
 }
