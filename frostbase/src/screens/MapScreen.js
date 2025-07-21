@@ -10,7 +10,7 @@ const MapScreen = () => {
       {}
       <Image 
         style={styles.backgroundImage} 
-        source={require('../assets/images/Map.jpg')} 
+        source={require('../assets/images/map.png')} 
         /* Imagen del mapa de la Ciudad de México con líneas de metro */
       />
       
@@ -33,9 +33,9 @@ const MapScreen = () => {
       <Text style={styles.locationLabel}>Casa</Text>
       
       {}
-      <TouchableOpacity style={styles.addButton}>
+      {/* <TouchableOpacity style={styles.addButton}>
         <Text style={styles.addButtonText}>Agregar nuevo lugar</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 };

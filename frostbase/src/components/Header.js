@@ -2,18 +2,53 @@ import { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 const Header = () => {
-    const [humidity, setHumidity] = useState(75);
-    const [temperature, setTemperature] = useState(5.0);
+    const [humidity, setHumidity] = useState();
+    const [temperature, setTemperature] = useState();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    
+    const idTruck = "674a4001000000000000001a";
 
-    {/* Código para simular los valores cada 2 segundos */}
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const humidityVariation = (Math.random() * 4 - 2).toFixed(0);
-            const tempVariation = (Math.random().toFixed(1) * 1 - 0.5).toFixed(1);
+    const fetchData = async () => {
+        try {
+            //Cambiar por un Endpoint que solo regrese la ultima lectura del IDTruck especificado
+            //La IP cambia cuando esté en la web
+            const response = await fetch('http://192.168.0.11:5125/api/Reading');
             
-            setHumidity(humidity + parseInt(humidityVariation));
-            setTemperature(parseFloat(temperature) + parseFloat(tempVariation));
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            // Filtrar lecturas
+            const truckReadings = data.data
+                .filter(reading => reading.idTruck === idTruck)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (truckReadings.length > 0) {
+                const latestReading = truckReadings[0];
+                setHumidity(latestReading.percHumidity);
+                setTemperature(latestReading.temperature);
+            } else {
+                setError("No data for this Truck");
+            }
+            
+            setLoading(false);
+        } catch (err) {
+            setError("Error getting data");
+            setLoading(false);
+            console.error("Fetch error:", err);
+        }
+    };
+    
 
+    {/* Código para recabar las medidas */}
+    useEffect(() => {
+        fetchData();
+        
+        const interval = setInterval(() => {
+            fetchData();
         }, 2000);
 
         return () => clearInterval(interval);
