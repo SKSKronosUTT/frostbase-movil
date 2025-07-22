@@ -3,12 +3,15 @@ import { View, Image, StyleSheet, Text, TouchableOpacity, TextInput, Alert } fro
 //Icons
 import Feather from '@expo/vector-icons/Feather';
 import { ActivityIndicator } from "react-native";
+//User
+import { useUser } from "../context/UserContext";
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [hidePassword, setHidePassword] = useState(true);
     const [loading, setLoading] = useState(false);
+    const { login } = useUser();
 
     const togglePasswordVisibility = () => {
         setHidePassword(!hidePassword);
@@ -25,27 +28,18 @@ const LoginScreen = ({ navigation }) => {
 
         try {
             const response = await fetch('http://192.168.0.11:5125/api/User');
-            
-            if (!response.ok) {
-                throw new Error(`Error HTTP! estado: ${response.status}`);
-            }
-
             const data = await response.json();
             
-            // Buscar usuario que coincida con email y password
-            const user = data.data.find(user => 
-                user.email.toLowerCase() === email.toLowerCase() && 
-                user.password === password
+            const user = data.data.find(u => 
+                u.email.toLowerCase() === email.toLowerCase() && 
+                u.password === password
             );
 
             if (user) {
-                // Login exitoso - navegar a MainApp con los datos del usuario
+                login(user);
                 navigation.reset({
                     index: 0,
-                    routes: [{ 
-                        name: 'MainApp',
-                        params: { user } // Pasamos los datos del usuario a la siguiente pantalla
-                    }],
+                    routes: [{ name: 'MainApp' }],
                 });
             } else {
                 Alert.alert("Error", "Wrong Credentials");
