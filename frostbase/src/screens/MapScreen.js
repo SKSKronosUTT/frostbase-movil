@@ -134,23 +134,23 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '400',
   },
-  addButton: {
-    position: 'absolute',
-    left: width * 0.12,
-    right: width * 0.12,
-    top: height - 50,
-    height: 50,
-    backgroundColor: '#64B5F6',
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: 'white',
-    fontSize: 15,
-    fontFamily: 'Inter',
-    fontWeight: '700',
-  },
+  // addButton: {
+  //   position: 'absolute',
+  //   left: width * 0.12,
+  //   right: width * 0.12,
+  //   top: height - 50,
+  //   height: 50,
+  //   backgroundColor: '#64B5F6',
+  //   borderRadius: 25,
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  // },
+  // addButtonText: {
+  //   color: 'white',
+  //   fontSize: 15,
+  //   fontFamily: 'Inter',
+  //   fontWeight: '700',
+  // },
 });
 
 export default MapScreen;
