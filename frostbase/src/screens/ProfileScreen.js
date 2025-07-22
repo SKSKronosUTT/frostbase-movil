@@ -1,28 +1,99 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-//Icons
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from "react-native";
 import Feather from '@expo/vector-icons/Feather';
+import { useUser } from "../context/UserContext";
 
 const ProfileScreen = ({ navigation }) => {
+    const { user, truckData, logout, setTruckData } = useUser();
+    const [loading, setLoading] = useState(!truckData);
+    const [error, setError] = useState(null);
+    const [logo, setLogo] = useState(require('../assets/trucks/scania.png'));
 
-    const [name, setName] = useState('John Doe Cuevas')
-    const [email, setEmail] = useState('johndoe@gmail.com')
-    const [plate, setPlate] = useState('ABC-123-D')
-    const [model, setModel] = useState('Volvo BE')
+    useEffect(() => {
+        const fetchTruckData = async () => {
+            if (user?.idTruck && !truckData) {
+                try {
+                    const response = await fetch(`http://192.168.0.11:5125/api/Truck/${user.idTruck}`);
+                    const data = await response.json();
+                    setTruckData(data.data);
 
+                    changeLogo(data.data.brand)
+                } catch (err) {
+                    setError("Error fetching Truck data");
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
 
-    function logout(){
-        //Fuga al login
+        fetchTruckData();
+    }, [user?.idTruck]);
+
+    const changeLogo = (brand) => {
+        switch (brand) {
+            case 'Volvo':
+                setLogo(require('../assets/trucks/volvo.png'));
+                break;
+            case 'Mercedes':
+                setLogo(require('../assets/trucks/mercedes.png'));
+                break;
+            case 'Scania':
+                setLogo(require('../assets/trucks/scania.png'));
+                break;
+            case 'MAN':
+                setLogo(require('../assets/trucks/man.png'));
+                break;
+            case 'DAF':
+                setLogo(require('../assets/trucks/daf.png'));
+                break;
+            case 'Iveco':
+                setLogo(require('../assets/trucks/iveco.png'));
+                break;
+        
+            default:
+                break;
+        }
+    }
+
+    const handleLogout = () => {
+        logout();
         navigation.reset({
             index: 0,
             routes: [{ name: 'Login' }],
         });
+    };
+
+    if (!user) {
+        return (
+            <View style={styles.container}>
+                <Text>User data not available</Text>
+            </View>
+        );
+    }
+
+    if (loading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color="#000080" />
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={styles.container}>
+                <Text style={{ color: 'red' }}>{error}</Text>
+            </View>
+        );
     }
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity style={styles.headerArrow}>
+                <TouchableOpacity 
+                    style={styles.headerArrow}
+                    onPress={() => navigation.goBack()}
+                >
                     <Feather name="arrow-left" size={24} color="black"/>
                 </TouchableOpacity>
                 <Text style={styles.headerText}>Profile</Text>
@@ -31,17 +102,29 @@ const ProfileScreen = ({ navigation }) => {
             <View style={styles.body}>
                 <Image 
                     style={styles.photo}
-                    source={require('../assets/images/JackBox.jpg')}
+                    source={require('../assets/images/FROSTYDUDE.png')}
                 />
-                <Text style={styles.text}>{name}</Text>
-                <Text style={styles.subtext}>{email}</Text>
-                <Feather name="truck" size={64} color="black" style={styles.truck}/>
-                <Text style={styles.text}>{plate}</Text>
-                <Text style={styles.subtext}>{model}</Text>
+                <Text style={styles.text}>
+                    {user.name.firstName} {user.name.lastName} {user.name.middleName ? user.name.middleName : ""}
+                </Text>
+                <Text style={styles.subtext}>{user.email}</Text>
+                                
+                {truckData ? (
+                    <>
+                        <Image 
+                            style={styles.brand}
+                            source={logo}
+                        />
+                        <Text style={styles.text}>{truckData.licensePlate}</Text>
+                        <Text style={styles.subtext}>{truckData.brand} {truckData.model}</Text>
+                    </>
+                ) : (
+                    <Text style={styles.subtext}>Truck not asigned</Text>
+                )}
 
                 {/* Botón para cerrar sesión */}
                 <View style={styles.footer}>
-                    <TouchableOpacity style={styles.button} onPress={logout}>
+                    <TouchableOpacity style={styles.button} onPress={handleLogout}>
                         <Text style={styles.buttonText}>
                             LOG OUT
                         </Text>
@@ -49,7 +132,6 @@ const ProfileScreen = ({ navigation }) => {
                 </View>
             </View>
         </View>
-
     )
 }
 
@@ -81,9 +163,13 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     photo:{
-        width: 150,
-        height: 150,
-        borderRadius: 100
+        width: 200,
+        height: 200,
+    },
+    brand:{
+        marginTop: 50,
+        width: 100,
+        height: 100,
     },
     text:{
         fontWeight: 'bold',
@@ -94,9 +180,6 @@ const styles = StyleSheet.create({
         fontWeight: 'light',
         fontSize: 16,
         marginTop: 10
-    },
-    truck:{
-        marginTop: 100,
     },
     footer:{
         flex: 1,

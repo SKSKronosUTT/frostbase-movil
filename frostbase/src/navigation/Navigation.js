@@ -2,6 +2,9 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { NavigationContainer } from "@react-navigation/native";
 
+//Context
+import { UserProvider } from "../context/UserContext";
+
 //Icons
 import Feather from '@expo/vector-icons/Feather';
 
@@ -62,8 +65,10 @@ function MyStack() {
 
 export default function Navigation() {
     return (
-        <NavigationContainer>
-            <MyStack />
-        </NavigationContainer>
+        <UserProvider>
+            <NavigationContainer>
+                <MyStack />
+            </NavigationContainer>
+        </UserProvider>
     );
 }
