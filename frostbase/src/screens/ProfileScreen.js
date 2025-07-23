@@ -147,16 +147,9 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     button: {
-        // borderColor: 'red',
-        // borderWidth: 1,
-        // borderRadius: 100,
-        // paddingTop: 15,
-        // paddingBottom: 15,
-        // paddingLeft: 30,
-        // paddingRight: 30,
         marginTop: 30,
         marginBottom: 20,
-        borderColor: 'red',
+        borderColor: '#F44336',
         borderWidth: 1,
         borderRadius: 100,
         paddingVertical: 15,
@@ -164,7 +157,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
     },
     buttonText: {
-        color: 'red',
+        color: '#F44336',
         fontWeight: 'bold',
         fontSize: 24
     }
