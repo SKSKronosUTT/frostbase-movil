@@ -4,30 +4,12 @@ import Feather from '@expo/vector-icons/Feather';
 import { useUser } from "../context/UserContext";
 
 const ProfileScreen = ({ navigation }) => {
-    const { user, truckData, logout, setTruckData } = useUser();
-    const [loading, setLoading] = useState(!truckData);
-    const [error, setError] = useState(null);
-    const [logo, setLogo] = useState(require('../assets/trucks/scania.png'));
+    const { user, truckData, logout } = useUser();
+    const [logo, setLogo] = useState(require('../assets/trucks/mercedes.png'));
 
     useEffect(() => {
-        const fetchTruckData = async () => {
-            if (user?.idTruck && !truckData) {
-                try {
-                    const response = await fetch(`http://192.168.0.11:5125/api/Truck/${user.idTruck}`);
-                    const data = await response.json();
-                    setTruckData(data.data);
-
-                    changeLogo(data.data.brand)
-                } catch (err) {
-                    setError("Error fetching Truck data");
-                } finally {
-                    setLoading(false);
-                }
-            }
-        };
-
-        fetchTruckData();
-    }, [user?.idTruck]);
+        changeLogo(truckData.brand)
+    })
 
     const changeLogo = (brand) => {
         switch (brand) {
@@ -51,6 +33,7 @@ const ProfileScreen = ({ navigation }) => {
                 break;
         
             default:
+                setLogo(require('../assets/trucks/mercedes.png'));
                 break;
         }
     }
@@ -62,30 +45,6 @@ const ProfileScreen = ({ navigation }) => {
             routes: [{ name: 'Login' }],
         });
     };
-
-    if (!user) {
-        return (
-            <View style={styles.container}>
-                <Text>User data not available</Text>
-            </View>
-        );
-    }
-
-    if (loading) {
-        return (
-            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <ActivityIndicator size="large" color="#000080" />
-            </View>
-        );
-    }
-
-    if (error) {
-        return (
-            <View style={styles.container}>
-                <Text style={{ color: 'red' }}>{error}</Text>
-            </View>
-        );
-    }
 
     return (
         <View style={styles.container}>
@@ -188,18 +147,26 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     button: {
+        // borderColor: 'red',
+        // borderWidth: 1,
+        // borderRadius: 100,
+        // paddingTop: 15,
+        // paddingBottom: 15,
+        // paddingLeft: 30,
+        // paddingRight: 30,
+        marginTop: 30,
+        marginBottom: 20,
         borderColor: 'red',
         borderWidth: 1,
         borderRadius: 100,
-        paddingTop: 15,
-        paddingBottom: 15,
-        paddingLeft: 30,
-        paddingRight: 30,
+        paddingVertical: 15,
+        paddingHorizontal: 30,
+        backgroundColor: 'white',
     },
     buttonText: {
         color: 'red',
-        fontWeight: 'light',
-        fontSize: 36
+        fontWeight: 'bold',
+        fontSize: 24
     }
 })
 
