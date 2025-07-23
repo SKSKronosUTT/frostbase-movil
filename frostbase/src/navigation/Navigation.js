@@ -41,7 +41,7 @@ function MyTabs() {
 
                     return <Feather name={iconName} size={size} color={color} />;
                 },
-                tabBarActiveTintColor: 'blue',
+                tabBarActiveTintColor: '#0277BD',
                 tabBarInactiveTintColor: 'gray',
                 headerShown: false,
             })}

@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
         paddingLeft: 30,
         borderBottomLeftRadius: 25,
         borderBottomRightRadius: 25,
-        backgroundColor: '#89B6DD',
+        backgroundColor: '#0277BD',
     },
     headerText: {
         color: 'white',
