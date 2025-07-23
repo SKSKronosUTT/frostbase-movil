@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { useUser } from "../context/UserContext";
 
 const Header = () => {
+    const { user } = useUser();
     const [humidity, setHumidity] = useState();
     const [temperature, setTemperature] = useState();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
-    const idTruck = "674a4001000000000000001a";
-
     const fetchData = async () => {
         try {
             //Cambiar por un Endpoint que solo regrese la ultima lectura del IDTruck especificado
@@ -23,7 +23,7 @@ const Header = () => {
             
             // Filtrar lecturas
             const truckReadings = data.data
-                .filter(reading => reading.idTruck === idTruck)
+                .filter(reading => reading.idTruck === user.idTruck)
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
             
             if (truckReadings.length > 0) {
