@@ -49,7 +49,7 @@ const Header = () => {
         
         const interval = setInterval(() => {
             fetchData();
-        }, 2000);
+        }, 5000);
 
         return () => clearInterval(interval);
     }, []);

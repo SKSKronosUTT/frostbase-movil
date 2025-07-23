@@ -11,7 +11,7 @@ const LoginScreen = ({ navigation }) => {
     const [password, setPassword] = useState('');
     const [hidePassword, setHidePassword] = useState(true);
     const [loading, setLoading] = useState(false);
-    const { login } = useUser();
+    const { login, setTruckData } = useUser();
 
     const togglePasswordVisibility = () => {
         setHidePassword(!hidePassword);
@@ -37,6 +37,15 @@ const LoginScreen = ({ navigation }) => {
 
             if (user) {
                 login(user);
+                //Fetch Truck data
+                try {
+                    const r = await fetch(`http://192.168.0.11:5125/api/Truck/${user.idTruck}`);
+                    const d = await r.json();
+                    setTruckData(d.data);
+                } catch (err) {
+                    setError("Error fetching Truck data");
+                }
+                //Go to MainApp
                 navigation.reset({
                     index: 0,
                     routes: [{ name: 'MainApp' }],
