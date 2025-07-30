@@ -1,27 +1,39 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Alert } from "react-native";
 import { useUser } from "../context/UserContext";
+import { Ionicons } from '@expo/vector-icons';
 
 const Header = () => {
     const { user } = useUser();
-    const [humidity, setHumidity] = useState();
-    const [temperature, setTemperature] = useState();
+    const [humidity, setHumidity] = useState(null);
+    const [temperature, setTemperature] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [params, setParams] = useState(null);
+    const [alert, setAlert] = useState({ temp: false, humidity: false });
     
-    const fetchData = async () => {
+    // Función para obtener los parámetros
+    const fetchParameters = async () => {
         try {
-            //Cambiar por un Endpoint que solo regrese la ultima lectura del IDTruck especificado
-            //La IP cambia cuando esté en la web
-            const response = await fetch('http://192.168.0.11:5125/api/Reading');
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            const response = await fetch('http://192.168.0.11:5125/api/Parameter');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             const data = await response.json();
+            if (data.status === 0 && data.data.length > 0) {
+                setParams(data.data[0]);
+            }
+        } catch (err) {
+            console.error("Error fetching parameters:", err);
+        }
+    };
+
+    // Función para obtener las lecturas
+    const fetchReadings = async () => {
+        try {
+            const response = await fetch('http://192.168.0.11:5125/api/Reading');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
-            // Filtrar lecturas
+            const data = await response.json();
             const truckReadings = data.data
                 .filter(reading => reading.idTruck === user.idTruck)
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -30,6 +42,14 @@ const Header = () => {
                 const latestReading = truckReadings[0];
                 setHumidity(latestReading.percHumidity);
                 setTemperature(latestReading.temperature);
+                
+                // Validar contra parámetros si están disponibles
+                if (params) {
+                    validateReadings(
+                        latestReading.temperature, 
+                        latestReading.percHumidity
+                    );
+                }
             } else {
                 setError("No data for this Truck");
             }
@@ -42,24 +62,94 @@ const Header = () => {
         }
     };
     
-
-    {/* Código para recabar las medidas */}
-    useEffect(() => {
-        fetchData();
+    // Función para validar las lecturas
+    const validateReadings = (temp, hum) => {
+        const newAlert = { temp: false, humidity: false };
         
-        const interval = setInterval(() => {
-            fetchData();
-        }, 5000);
+        if (temp > params.maxTemperature || temp < params.minTemperature) {
+            newAlert.temp = true;
+            // Mostrar alerta solo la primera vez que se detecta
+            if (!alert.temp) {
+                Alert.alert(
+                    "Temperature Alert",
+                    `The temperature (${temp}°C) is out of parameters (${params.minTemperature}°C - ${params.maxTemperature}°C)`
+                );
+            }
+        }
+        
+        if (hum > params.maxHumidity || hum < params.minHumidity) {
+            newAlert.humidity = true;
+            // Mostrar alerta solo la primera vez que se detecta
+            if (!alert.humidity) {
+                Alert.alert(
+                    "Humidity Alert",
+                    `The humidity (${hum}%) is out of parameters (${params.minHumidity}% - ${params.maxHumidity}%)`
+                );
+            }
+        }
+        
+        setAlert(newAlert);
+    };
+
+    useEffect(() => {
+        // Cargar parámetros primero
+        fetchParameters();
+        
+        // Luego configurar el intervalo para lecturas
+        fetchReadings();
+        const interval = setInterval(fetchReadings, 5000);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [params]); // Se ejecuta de nuevo si params cambia
+
+    // Estilos condicionales para alertas
+    const getValueStyle = (type) => {
+        const baseStyle = {
+            color: 'white',
+            fontSize: 48,
+            marginLeft: 20,
+        };
+        
+        if (type === 'temp' && alert.temp) {
+            return {
+                ...baseStyle,
+                color: '#e50000ff', // Rojo para alerta
+                fontWeight: 'bold'
+            };
+        }
+        
+        if (type === 'humidity' && alert.humidity) {
+            return {
+                ...baseStyle,
+                color: '#e50000ff', // Rojo para alerta
+                fontWeight: 'bold'
+            };
+        }
+        
+        return baseStyle;
+    };
 
     return(
         <View style={styles.header}>
-            <Text style={styles.headerText}>Humidity</Text>
-            <Text style={styles.headerValue}>{humidity}%</Text>
-            <Text style={styles.headerText}>Temperature</Text>
-            <Text style={styles.headerValue}>{temperature}° C</Text>
+            <View style={styles.row}>
+                <Text style={styles.headerText}>Humidity</Text>
+                {alert.humidity && (
+                    <Ionicons name="warning" size={24} color="#e50000ff" style={styles.alertIcon} />
+                )}
+            </View>
+            <Text style={getValueStyle('humidity')}>
+                {humidity !== null ? `${humidity}%` : '--'}
+            </Text>
+            
+            <View style={styles.row}>
+                <Text style={styles.headerText}>Temperature</Text>
+                {alert.temp && (
+                    <Ionicons name="warning" size={24} color="#e50000ff" style={styles.alertIcon} />
+                )}
+            </View>
+            <Text style={getValueStyle('temp')}>
+                {temperature !== null ? `${temperature}° C` : '--'}
+            </Text>
         </View>
     )
 }
@@ -78,11 +168,18 @@ const styles = StyleSheet.create({
     headerText: {
         color: 'white',
         fontSize: 36,
-        fontWeight: 300
+        fontWeight: '300'
     },
-    headerValue: {
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    alertIcon: {
+        marginLeft: 10
+    },
+    loadingText: {
         color: 'white',
-        fontSize: 48,
+        fontSize: 18,
         marginLeft: 20,
     }
 })
