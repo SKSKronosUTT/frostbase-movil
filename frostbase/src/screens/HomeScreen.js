@@ -1,45 +1,75 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import React, { useState, useEffect, useContext } from "react";
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView,
+  ActivityIndicator,
+  Alert 
+} from "react-native";
 import Header from "../components/Header";
-
-const tripData = [
-  {
-    id: 1,
-    address: "Calle Principal 123, Ciudad A",
-    orderNumber: "ORD-1001",
-    status: "pending"
-  },
-  {
-    id: 2,
-    address: "Avenida Central 456, Ciudad B",
-    orderNumber: "ORD-1002",
-    status: "pending"
-  },
-  {
-    id: 3,
-    address: "Boulevard Norte 789, Ciudad C",
-    orderNumber: "ORD-1003",
-    status: "pending"
-  },
-  {
-    id: 4,
-    address: "Calle Sur 321, Ciudad D",
-    orderNumber: "ORD-1004",
-    status: "pending"
-  },
-  {
-    id: 5,
-    address: "Avenida Este 654, Ciudad E",
-    orderNumber: "ORD-1005",
-    status: "pending"
-  }
-];
+import { useUser } from "../context/UserContext";
 
 const HomeScreen = () => {
+  const { user } = useUser();
   const [onTrip, setOnTrip] = useState(false);
   const [tripFinished, setTripFinished] = useState(false);
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
-  const [stops, setStops] = useState(tripData);
+  const [stops, setStops] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [route, setRoute] = useState(null);
+
+  // Obtener las rutas del conductor
+  const fetchRoutes = async () => {
+    try {
+      const response = await fetch('http://192.168.0.11:5125/api/Route');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.status === 0 && data.data.length > 0) {
+        // Filtrar rutas por el conductor actual
+        const driverRoute = data.data.find(r => 
+          r.driver.id === user.id
+        );
+        
+        if (driverRoute) {
+          setRoute(driverRoute);
+          // Ordenar las paradas por sequence y mapear a nuestro formato
+          const sortedStops = driverRoute.stores
+            .sort((a, b) => a.sequence - b.sequence)
+            .map((stop, index) => ({
+              id: stop.store.id,
+              address: stop.store.location.address,
+              storeName: stop.store.name,
+              phone: stop.store.phone,
+              latitude: stop.store.location.latitude,
+              longitude: stop.store.location.longitude,
+              orderNumber: `STOP-${index + 1}`,
+              status: "pending"
+            }));
+          
+          setStops(sortedStops);
+        } else {
+          Alert.alert("Info", "You don't have an asigned Route");
+        }
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching routes:", error);
+      Alert.alert("Error", "Could'nt get Route information");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRoutes();
+  }, [user.id]);
 
   const handleTrip = () => {
     if (!onTrip && !tripFinished) {
@@ -73,16 +103,25 @@ const HomeScreen = () => {
   };
 
   const renderTripInfo = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#21BEBA" />
+        </View>
+      );
+    }
+
     if (tripFinished) {
       // Mostrar mensaje de viaje completado
       return (
         <View style={styles.emptyTripContainer}>
-          <Text style={styles.emptyTripText}>There are no Trips asigned</Text>
+          <Text style={styles.emptyTripText}>Trip completed successfully</Text>
+          <Text style={styles.routeName}>{route?.name}</Text>
           <TouchableOpacity 
             style={styles.newTripButton} 
             onPress={startNewTrip}
           >
-            <Text style={styles.newTripButtonText}>Plan new Trip</Text>
+            <Text style={styles.newTripButtonText}>Start new trip</Text>
           </TouchableOpacity>
         </View>
       );
@@ -93,12 +132,14 @@ const HomeScreen = () => {
           style={styles.tripInfoContainer}
           contentContainerStyle={styles.scrollContent}
         >
-          <Text style={styles.sectionTitle}>Trip Schedule</Text>
+          <Text style={styles.routeName}>{route?.name}</Text>
+          <Text style={styles.sectionTitle}>Trip schedule</Text>
           {stops.map((stop, index) => (
             <View key={stop.id} style={styles.stopCard}>
               <Text style={styles.stopNumber}>Stop #{index + 1}</Text>
+              <Text style={styles.storeName}>{stop.storeName}</Text>
               <Text style={styles.stopAddress}>{stop.address}</Text>
-              <Text style={styles.stopDetails}>Order: {stop.orderNumber}</Text>
+              <Text style={styles.stopDetails}>Phone: {stop.phone}</Text>
             </View>
           ))}
         </ScrollView>
@@ -111,19 +152,22 @@ const HomeScreen = () => {
 
       return (
         <ScrollView style={styles.tripProgressContainer}>
+          <Text style={styles.routeName}>{route?.name}</Text>
           <Text style={styles.sectionTitle}>Current Stop</Text>
           <View style={[styles.stopCard, styles.currentStopCard]}>
             <Text style={styles.stopNumber}>Stop #{currentStopIndex + 1}</Text>
+            <Text style={styles.storeName}>{stops[currentStopIndex].storeName}</Text>
             <Text style={styles.stopAddress}>{stops[currentStopIndex].address}</Text>
-            <Text style={styles.stopDetails}>Order: {stops[currentStopIndex].orderNumber}</Text>
+            <Text style={styles.stopDetails}>Phone: {stops[currentStopIndex].phone}</Text>
           </View>
 
           {currentStopIndex > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Completed Orders</Text>
-              {completedStops.map((stop) => (
+              <Text style={styles.sectionTitle}>Completed stops</Text>
+              {completedStops.map((stop, index) => (
                 <View key={stop.id} style={[styles.stopCard, styles.completedStopCard]}>
-                  <Text style={styles.stopNumber}>Stop #{stop.id} ✓</Text>
+                  <Text style={styles.stopNumber}>Stop ✓</Text>
+                  <Text style={styles.storeName}>{stop.storeName}</Text>
                   <Text style={styles.stopAddress}>{stop.address}</Text>
                 </View>
               ))}
@@ -135,9 +179,10 @@ const HomeScreen = () => {
   };
 
   const getButtonText = () => {
+    if (loading) return "LOADING...";
     if (tripFinished) return "TRIP COMPLETED";
     if (!onTrip) return "START TRIP";
-    return currentStopIndex < stops.length - 1 ? "NEXT STOP" : "END TRIP";
+    return currentStopIndex < stops.length - 1 ? "NEXT STOP" : "FINISH TRIP";
   };
 
   return (
@@ -147,14 +192,14 @@ const HomeScreen = () => {
         <TouchableOpacity 
           style={[
             styles.button, 
-            tripFinished && styles.disabledButton
+            (tripFinished || loading || stops.length === 0) && styles.disabledButton
           ]} 
           onPress={handleTrip}
-          disabled={tripFinished}
+          disabled={tripFinished || loading || stops.length === 0}
         >
           <Text style={[
             styles.buttonText,
-            tripFinished && styles.disabledButtonText
+            (tripFinished || loading || stops.length === 0) && styles.disabledButtonText
           ]}>
             {getButtonText()}
           </Text>
@@ -197,6 +242,14 @@ const styles = StyleSheet.create({
   },
   disabledButtonText: {
     color: '#9E9E9E',
+  },
+  routeName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#0277BD',
+    marginVertical: 10,
+    alignSelf: 'center',
+    textAlign: 'center',
   },
   sectionTitle: {
     fontSize: 20,
@@ -243,6 +296,12 @@ const styles = StyleSheet.create({
     color: '#2C3E50',
     marginBottom: 5,
   },
+  storeName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#34495E',
+    marginBottom: 5,
+  },
   stopAddress: {
     fontSize: 16,
     color: '#34495E',
@@ -264,18 +323,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#555',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   newTripButton: {
     backgroundColor: '#21BEBA',
     paddingVertical: 12,
     paddingHorizontal: 25,
     borderRadius: 25,
+    marginTop: 15,
   },
   newTripButtonText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
