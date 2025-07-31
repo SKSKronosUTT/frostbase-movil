@@ -10,6 +10,7 @@ import {
 import Header from '../components/Header';
 import { LineChart } from 'react-native-chart-kit';
 import { useUser } from '../context/UserContext';
+import { api } from '../config/api';
 
 const AnalyticsScreen = () => {
   const { user } = useUser();
@@ -23,7 +24,7 @@ const AnalyticsScreen = () => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('http://192.168.0.11:5125/api/Reading');
+      const response = await fetch(api.url + 'Reading');
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -33,7 +34,7 @@ const AnalyticsScreen = () => {
       
       // Filtrar y ordenar datos
       const filteredData = result.data
-        .filter(reading => reading.idTruck === user.idTruck)
+        .filter(reading => reading.truck.id === user.truckData.id)
         .sort((a, b) => new Date(a.date) - new Date(b.date));
       
       setReadings(filteredData);
@@ -56,7 +57,7 @@ const AnalyticsScreen = () => {
 
     // Limpiar intervalo al desmontar el componente
     return () => clearInterval(intervalId);
-  }, [user.idTruck]);
+  }, [user.truckData.id]);
 
   const prepareChartData = () => {
     const labels = readings.map(reading => 
@@ -67,7 +68,7 @@ const AnalyticsScreen = () => {
       labels,
       datasets: [
         {
-          data: readings.map(reading => reading.temperature),
+          data: readings.map(reading => reading.temp),
           color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
           strokeWidth: 2
         },

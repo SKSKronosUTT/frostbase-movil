@@ -4,11 +4,11 @@ import Feather from '@expo/vector-icons/Feather';
 import { useUser } from "../context/UserContext";
 
 const ProfileScreen = ({ navigation }) => {
-    const { user, truckData, logout } = useUser();
+    const { user, logout } = useUser();
     const [logo, setLogo] = useState(require('../assets/trucks/mercedes.png'));
 
     useEffect(() => {
-        changeLogo(truckData.brand)
+        changeLogo(user.truckData.brand)
     })
 
     const changeLogo = (brand) => {
@@ -64,18 +64,18 @@ const ProfileScreen = ({ navigation }) => {
                     source={require('../assets/images/FROSTYDUDE.png')}
                 />
                 <Text style={styles.text}>
-                    {user.name.firstName} {user.name.lastName} {user.name.middleName ? user.name.middleName : ""}
+                    {user.name}
                 </Text>
                 <Text style={styles.subtext}>{user.email}</Text>
                                 
-                {truckData ? (
+                {user.truckData ? (
                     <>
                         <Image 
                             style={styles.brand}
                             source={logo}
                         />
-                        <Text style={styles.text}>{truckData.licensePlate}</Text>
-                        <Text style={styles.subtext}>{truckData.brand} {truckData.model}</Text>
+                        <Text style={styles.text}>{user.truckData.licensePlate}</Text>
+                        <Text style={styles.subtext}>{user.truckData.brand} {user.truckData.model}</Text>
                     </>
                 ) : (
                     <Text style={styles.subtext}>Truck not asigned</Text>

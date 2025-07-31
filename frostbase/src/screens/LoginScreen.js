@@ -5,13 +5,14 @@ import Feather from '@expo/vector-icons/Feather';
 import { ActivityIndicator } from "react-native";
 //User
 import { useUser } from "../context/UserContext";
+import { api } from "../config/api";
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [hidePassword, setHidePassword] = useState(true);
     const [loading, setLoading] = useState(false);
-    const { login, setTruckData } = useUser();
+    const { login } = useUser();
 
     const togglePasswordVisibility = () => {
         setHidePassword(!hidePassword);
@@ -27,35 +28,53 @@ const LoginScreen = ({ navigation }) => {
         setLoading(true);
 
         try {
-            const response = await fetch('http://192.168.0.11:5125/api/User');
-            const data = await response.json();
-            
-            const user = data.data.find(u => 
-                u.email.toLowerCase() === email.toLowerCase() && 
-                u.password === password
-            );
+            const response = await fetch(api.url + 'User/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
 
-            if (user) {
-                login(user);
-                //Fetch Truck data
-                try {
-                    const r = await fetch(`http://192.168.0.11:5125/api/Truck/${user.idTruck}`);
-                    const d = await r.json();
-                    setTruckData(d.data);
-                } catch (err) {
-                    setError("Error fetching Truck data");
+            const data = await response.json();
+
+            if (response.ok) {
+                if (data.status === 0) { // Login exitoso
+                    // Formatear los datos del usuario para el contexto
+                    const userData = {
+                        id: data.data.id,
+                        email: data.data.email,
+                        name: data.data.name.fullName,
+                        phone: data.data.phone,
+                        isAdmin: data.data.isAdmin,
+                        truckData: {
+                            id: data.data.truckDefault.id,
+                            brand: data.data.truckDefault.brand,
+                            model: data.data.truckDefault.model,
+                            licensePlate: data.data.truckDefault.licensePlate,
+                            state: data.data.truckDefault.state.description
+                        }
+                    };
+
+                    login(userData);
+
+                    // Navegar a la pantalla principal
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'MainApp' }],
+                    });
+                } else {
+                    Alert.alert("Error", data.error || "Wrong credentials");
                 }
-                //Go to MainApp
-                navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'MainApp' }],
-                });
             } else {
-                Alert.alert("Error", "Wrong Credentials");
+                Alert.alert("Error", data.error || "Server error");
             }
         } catch (error) {
             console.error("Login error:", error);
-            Alert.alert("Error", "Can not access to the server");
+            Alert.alert("Error", "Coud not connect to server");
         } finally {
             setLoading(false);
         }

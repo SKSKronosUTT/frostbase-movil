@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import Header from "../components/Header";
 import { useUser } from "../context/UserContext";
+import { api } from "../config/api";
 
 const HomeScreen = () => {
   const { user } = useUser();
@@ -19,11 +20,11 @@ const HomeScreen = () => {
   const [stops, setStops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [route, setRoute] = useState(null);
-
+console.log(user);
   // Obtener las rutas del conductor
   const fetchRoutes = async () => {
     try {
-      const response = await fetch('http://192.168.0.11:5125/api/Route');
+      const response = await fetch(api.url + 'Route');
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

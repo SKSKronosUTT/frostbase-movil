@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Alert } from "react-native";
 import { useUser } from "../context/UserContext";
 import { Ionicons } from '@expo/vector-icons';
+import { api } from "../config/api";
 
 const Header = () => {
     const { user } = useUser();
@@ -15,12 +16,12 @@ const Header = () => {
     // Función para obtener los parámetros
     const fetchParameters = async () => {
         try {
-            const response = await fetch('http://192.168.0.11:5125/api/Parameter');
+            const response = await fetch(api.url + 'Parameter');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             const data = await response.json();
-            if (data.status === 0 && data.data.length > 0) {
-                setParams(data.data[0]);
+            if (data.status === 0) {
+                setParams(data.data);
             }
         } catch (err) {
             console.error("Error fetching parameters:", err);
@@ -30,23 +31,23 @@ const Header = () => {
     // Función para obtener las lecturas
     const fetchReadings = async () => {
         try {
-            const response = await fetch('http://192.168.0.11:5125/api/Reading');
+            const response = await fetch(api.url + 'Reading');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             const data = await response.json();
             const truckReadings = data.data
-                .filter(reading => reading.idTruck === user.idTruck)
+                .filter(reading => reading.truck.id === user.truckData.id)
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
             
             if (truckReadings.length > 0) {
                 const latestReading = truckReadings[0];
                 setHumidity(latestReading.percHumidity);
-                setTemperature(latestReading.temperature);
+                setTemperature(latestReading.temp);
                 
                 // Validar contra parámetros si están disponibles
                 if (params) {
                     validateReadings(
-                        latestReading.temperature, 
+                        latestReading.temp, 
                         latestReading.percHumidity
                     );
                 }

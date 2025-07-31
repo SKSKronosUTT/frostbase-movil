@@ -10,6 +10,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useUser } from '../context/UserContext';
 import { WebView } from 'react-native-webview'; 
+import { api } from '../config/api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,7 +28,7 @@ const MapScreen = () => {
 
   const fetchTruckLocation = async () => {
     try {
-      const response = await fetch('http://192.168.0.11:5125/api/Reading');
+      const response = await fetch(api.url + 'Reading');
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -37,14 +38,14 @@ const MapScreen = () => {
       
       // Filtrar lecturas para nuestro camión y ordenar por fecha
       const truckReadings = result.data
-        .filter(reading => reading.idTruck === user.idTruck)
+        .filter(reading => reading.truck.id === user.truckData.id)
         .sort((a, b) => new Date(b.date) - new Date(a.date));
-      
+      console.log(truckReadings);
       if (truckReadings.length > 0) {
         const latestReading = truckReadings[0];
         setTruckLocation({
-          latitude: latestReading.latitude,
-          longitude: latestReading.longitude
+          latitude: latestReading.location.latitude,
+          longitude: latestReading.location.longitude
         });
         setLastUpdate(new Date(latestReading.date).toLocaleTimeString());
       } else {
@@ -69,7 +70,7 @@ const MapScreen = () => {
     }, 5000);
 
     return () => clearInterval(intervalId);
-  }, [user.idTruck]);
+  }, [user.truckData.id]);
 
   // HTML con mapa minimalista y colores fríos
   const mapHtml = `
@@ -157,19 +158,6 @@ const MapScreen = () => {
           
         }}
       />
-      
-      {/* Barra de búsqueda */}
-      {/* <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Busca aquí"
-          placeholderTextColor="#868686"
-        />
-        <View style={styles.searchIcons}>
-          <Feather name="search" size={20} color="#616161" />
-          <Feather name="filter" size={16} color="#64B5F6" />
-        </View>
-      </View> */}
     </View>
   );
 };
