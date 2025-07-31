@@ -1,58 +1,145 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { 
+  View, 
+  Text, 
+  ScrollView, 
+  StyleSheet, 
+  ActivityIndicator 
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Header from '../components/Header';
+import { useUser } from '../context/UserContext';
+import { api } from '../config/api';
 
 const HistoryScreen = () => {
-  const transactions = [
-    {
-      id: 1,
-      store: "Soriana Hiper",
-      address: "Blvd. Gustavo Díaz Ordaz 17151, Jardines de La Mesa, 22680 Tijuana, B.C.",
-      date: "17 Sep 2023",
-      time: "10:34 AM",
-      status: "confirmed"
-    },
-   
-  ];
+  const { user } = useUser();
+  const [trips, setTrips] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const TransactionCard = ({ store, address, date, time, status }) => {
+  // Función para formatear la fecha
+  const formatDate = (dateString) => {
+    const options = { day: 'numeric', month: 'short', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('es-MX', options);
+  };
+
+  // Función para formatear la hora
+  const formatTime = (dateString) => {
+    const options = { hour: '2-digit', minute: '2-digit' };
+    return new Date(dateString).toLocaleTimeString('es-MX', options);
+  };
+
+  useEffect(() => {
+    const fetchTrips = async () => {
+      try {
+        const response = await fetch(api.url + 'Trip');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.status === 0) {
+          // Filtrar viajes completados por el conductor actual
+          const completedTrips = data.data.filter(trip => 
+            trip.driver.id === user.id && 
+            trip.state.id === 'CP' // Completed trips
+          );
+          
+          setTrips(completedTrips);
+        } else {
+          setError("Error al obtener los viajes");
+        }
+      } catch (err) {
+        console.error("Error fetching trips:", err);
+        setError("Could not connect to server");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrips();
+  }, [user.id]);
+
+  const TransactionCard = ({ trip }) => {
+    // Tomamos la primera orden para mostrar información de la tienda
+    const firstOrder = trip.orders[0];
+    const startDate = formatDate(trip.tripTime.startTime);
+    const startTime = formatTime(trip.tripTime.startTime);
+    const endTime = formatTime(trip.tripTime.endTime);
+
     return (
       <View style={styles.transactionCard}>
         <View style={styles.transactionContent}>
           <View style={styles.transactionLeft}>
             <View style={styles.transactionIcon}>
-              <Feather name="shopping-bag" size={24} color="#fff" />
+              <Feather name="truck" size={24} color="#fff" />
             </View>
             <View style={styles.transactionDetails}>
               <Text style={styles.storeName} numberOfLines={1} ellipsizeMode="tail">
-                {store}
+                {trip.route.name}
               </Text>
               <Text style={styles.storeAddress} numberOfLines={2} ellipsizeMode="tail">
-                {address}
+                {firstOrder?.store?.location?.address || 'Location no available'}
+              </Text>
+              <Text style={styles.truckInfo}>
+                {trip.truck.brand} {trip.truck.model} - {trip.truck.licensePlate}
               </Text>
             </View>
           </View>
           <View style={styles.transactionRight}>
             <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>{status}</Text>
+              <Text style={styles.statusText}>{trip.state.message}</Text>
             </View>
-            <Text style={styles.dateText}>{date}</Text>
-            <Text style={styles.timeText}>{time}</Text>
+            <Text style={styles.dateText}>{startDate}</Text>
+            <Text style={styles.timeText}>{startTime} - {endTime}</Text>
+            <Text style={styles.ordersText}>
+              {trip.orders.length} {trip.orders.length === 1 ? 'order' : 'orders'}
+            </Text>
           </View>
         </View>
       </View>
     );
   };
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Header />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0277BD" />
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Header />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Header />
-      <ScrollView contentContainerStyle={styles.transactionsList}>
-        {transactions.map((t) => (
-          <TransactionCard key={t.id} {...t} />
-        ))}
-      </ScrollView>
+      {trips.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Feather name="calendar" size={48} color="#B3C5F7" />
+          <Text style={styles.emptyText}>You do not have completed trips.</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.transactionsList}>
+          {trips.map((trip) => (
+            <TransactionCard key={trip.id} trip={trip} />
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -63,6 +150,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2ECF5',
     alignItems: 'center',
     justifyContent: 'flex-start',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#FF5252',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    color: '#555',
+    fontSize: 18,
+    marginTop: 16,
+    textAlign: 'center',
   },
   transactionsList: {
     padding: 16,
@@ -98,7 +213,7 @@ const styles = StyleSheet.create({
   transactionIcon: {
     width: 48,
     height: 48,
-    backgroundColor: '#B3C5F7',
+    backgroundColor: '#0277BD',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -123,6 +238,11 @@ const styles = StyleSheet.create({
     lineHeight: 18, 
     flexWrap: 'wrap',
   },
+  truckInfo: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
   transactionRight: {
     alignItems: 'flex-end',
     justifyContent: 'center',
@@ -140,7 +260,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#5DC486',
+    color: '#0277BD',
     textAlign: 'center',
   },
   dateText: {
@@ -153,6 +273,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(38,39,58,0.6)',
     textAlign: 'right',
+    marginBottom: 4,
+  },
+  ordersText: {
+    fontSize: 11,
+    color: '#0277BD',
+    fontWeight: '600',
   },
 });
 

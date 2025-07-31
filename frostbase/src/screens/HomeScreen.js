@@ -20,7 +20,6 @@ const HomeScreen = () => {
   const [stops, setStops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [route, setRoute] = useState(null);
-console.log(user);
   // Obtener las rutas del conductor
   const fetchRoutes = async () => {
     try {
