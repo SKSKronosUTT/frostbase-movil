@@ -40,7 +40,6 @@ const MapScreen = () => {
       const truckReadings = result.data
         .filter(reading => reading.truck.id === user.truckData.id)
         .sort((a, b) => new Date(b.date) - new Date(a.date));
-      console.log(truckReadings);
       if (truckReadings.length > 0) {
         const latestReading = truckReadings[0];
         setTruckLocation({
