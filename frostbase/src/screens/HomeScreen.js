@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   View, 
   Text, 
@@ -20,86 +20,240 @@ const HomeScreen = () => {
   const [stops, setStops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [route, setRoute] = useState(null);
-  // Obtener las rutas del conductor
-  const fetchRoutes = async () => {
+  const [currentTripId, setCurrentTripId] = useState(null);
+  const [buttonLoading, setButtonLoading] = useState(false);
+
+  // Obtener órdenes pendientes
+  const fetchPendingOrders = async () => {
     try {
-      const response = await fetch(api.url + 'Route');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
+      const response = await fetch(api.url + 'Order/pending');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
+      return data.status === 0 ? data.data : [];
+    } catch (error) {
+      console.error("Error fetching pending orders:", error);
+      return [];
+    }
+  };
+
+  // Iniciar un nuevo viaje en el backend
+  const startTripInBackend = async () => {
+    try {
+      const startDate = new Date().toISOString();
       
-      if (data.status === 0 && data.data.length > 0) {
-        // Filtrar rutas por el conductor actual
-        const driverRoute = data.data.find(r => 
-          r.driver.id === user.id
-        );
+      const tripData = {
+        idTruck: user.truckData.id,
+        idDriver: user.id,
+        idRoute: route.id,
+        startDate: startDate
+      };
+
+      const response = await fetch(api.url + 'Trip/Start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tripData)
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const responseData = await response.json();
+      
+      if (responseData.status === 0) {
+        setCurrentTripId(responseData.data.id);
+        return responseData.data.id;
+      } else {
+        throw new Error(responseData.message || "Failed to start trip");
+      }
+    } catch (error) {
+      console.error("Error starting trip:", error);
+      Alert.alert("Error", "Couldn't start trip in backend");
+      throw error;
+    }
+  };
+
+  // Iniciar una orden en el backend
+  const startOrderInBackend = async (tripId, orderId) => {
+    try {
+      const response = await fetch(`${api.url}Trip/${tripId}/StartOrder/${orderId}`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const responseData = await response.json();
+      
+      if (responseData.status !== 0) {
+        throw new Error(responseData.message || "Failed to start order");
+      }
+    } catch (error) {
+      console.error("Error starting order:", error);
+      Alert.alert("Error", "Couldn't start order in backend");
+      throw error;
+    }
+  };
+
+  // Finalizar una orden en el backend
+  const endOrderInBackend = async (tripId, orderId) => {
+    try {
+      const response = await fetch(`${api.url}Trip/${tripId}/EndOrder/${orderId}`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const responseData = await response.json();
+      
+      if (responseData.status !== 0) {
+        throw new Error(responseData.message || "Failed to end order");
+      }
+    } catch (error) {
+      console.error("Error ending order:", error);
+      Alert.alert("Error", "Couldn't end order in backend");
+      throw error;
+    }
+  };
+
+  // Finalizar el viaje en el backend
+  const endTripInBackend = async (tripId) => {
+    try {
+      const response = await fetch(`${api.url}Trip/End/${tripId}`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const responseData = await response.json();
+      
+      if (responseData.status !== 0) {
+        throw new Error(responseData.message || "Failed to end trip");
+      }
+    } catch (error) {
+      console.error("Error ending trip:", error);
+      Alert.alert("Error", "Couldn't end trip in backend");
+      throw error;
+    }
+  };
+
+  // Obtener ruta y combinar con órdenes pendientes
+  const fetchRouteWithPendingOrders = async () => {
+    setLoading(true);
+    try {
+      const [routesResponse, pendingOrders] = await Promise.all([
+        fetch(api.url + 'Route'),
+        fetchPendingOrders()
+      ]);
+
+      if (!routesResponse.ok) throw new Error(`HTTP error! status: ${routesResponse.status}`);
+      
+      const routesData = await routesResponse.json();
+      
+      if (routesData.status === 0 && routesData.data.length > 0) {
+        const driverRoute = routesData.data.find(r => r.driver.id === user.id);
         
         if (driverRoute) {
           setRoute(driverRoute);
-          // Ordenar las paradas por sequence y mapear a nuestro formato
-          const sortedStops = driverRoute.stores
-            .sort((a, b) => a.sequence - b.sequence)
-            .map((stop, index) => ({
-              id: stop.store.id,
-              address: stop.store.location.address,
-              storeName: stop.store.name,
-              phone: stop.store.phone,
-              latitude: stop.store.location.latitude,
-              longitude: stop.store.location.longitude,
-              orderNumber: `STOP-${index + 1}`,
-              status: "pending"
-            }));
           
-          setStops(sortedStops);
+          const routeStoreIds = driverRoute.stores.map(store => store.store.id);
+          const routePendingOrders = pendingOrders.filter(order => 
+            routeStoreIds.includes(order.store.id)
+          );
+
+          const stopsWithPendingOrders = driverRoute.stores
+            .filter(store => 
+              pendingOrders.some(order => order.store.id === store.store.id)
+            )
+            .sort((a, b) => a.sequence - b.sequence)
+            .map((stop, index) => {
+              const order = pendingOrders.find(o => o.store.id === stop.store.id);
+              return {
+                id: stop.store.id,
+                address: stop.store.location.address,
+                storeName: stop.store.name,
+                phone: stop.store.phone,
+                latitude: stop.store.location.latitude,
+                longitude: stop.store.location.longitude,
+                orderNumber: order ? order.id : `STOP-${index + 1}`,
+                status: "pending",
+                orderDetails: order
+              };
+            });
+          
+          setStops(stopsWithPendingOrders);
+          
+          if (stopsWithPendingOrders.length === 0) {
+            Alert.alert("Info", "No pending orders for your route");
+          }
         } else {
-          Alert.alert("Info", "You don't have an asigned Route");
+          Alert.alert("Info", "You don't have an assigned Route");
         }
       }
-      
-      setLoading(false);
     } catch (error) {
-      console.error("Error fetching routes:", error);
-      Alert.alert("Error", "Could'nt get Route information");
+      console.error("Error:", error);
+      Alert.alert("Error", "Couldn't get route information");
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRoutes();
+    fetchRouteWithPendingOrders();
   }, [user.id]);
 
-  const handleTrip = () => {
-    if (!onTrip && !tripFinished) {
-      // Iniciar nuevo viaje
-      setOnTrip(true);
-      setTripFinished(false);
-    } else if (onTrip) {
-      // Avanzar en el viaje
-      const updatedStops = [...stops];
-      updatedStops[currentStopIndex].status = "completed";
-      setStops(updatedStops);
-      
-      if (currentStopIndex < stops.length - 1) {
-        setCurrentStopIndex(currentStopIndex + 1);
-      } else {
-        // Finalizar viaje
-        finishTrip();
+  const handleTrip = async () => {
+    if (buttonLoading) return;
+    setButtonLoading(true);
+
+   try {
+      if (!onTrip && !tripFinished) {
+        const tripId = await startTripInBackend();
+        if (stops.length > 0) {
+          await startOrderInBackend(tripId, stops[0].orderDetails.id);
+        }
+        setOnTrip(true);
+        setTripFinished(false);
+      } else if (onTrip) {
+        const currentOrderId = stops[currentStopIndex].orderDetails.id;
+        await endOrderInBackend(currentTripId, currentOrderId);
+        
+        const updatedStops = [...stops];
+        updatedStops[currentStopIndex].status = "completed";
+        setStops(updatedStops);
+        
+        if (currentStopIndex < stops.length - 1) {
+          const nextOrderId = stops[currentStopIndex + 1].orderDetails.id;
+          await startOrderInBackend(currentTripId, nextOrderId);
+          setCurrentStopIndex(currentStopIndex + 1);
+        } else {
+          await finishTrip();
+        }
       }
+    } catch (error) {
+      console.error("Error:", error);
+      Alert.alert("Error", "Operation failed. Please try again.");
+    } finally {
+      setButtonLoading(false); // Siempre desactivamos el estado de carga al final
     }
   };
 
-  const finishTrip = () => {
-    setOnTrip(false);
-    setTripFinished(true);
-    setCurrentStopIndex(0);
-    setStops(stops.map(stop => ({...stop, status: "pending"})));
+  const finishTrip = async () => {
+    try {
+      await endTripInBackend(currentTripId);
+      
+      setOnTrip(false);
+      setTripFinished(true);
+      setCurrentStopIndex(0);
+      setCurrentTripId(null);
+      setStops(stops.map(stop => ({...stop, status: "pending"})));
+    } catch (error) {
+      console.error("Error finishing trip:", error);
+    }
   };
 
   const startNewTrip = () => {
     setTripFinished(false);
+    fetchRouteWithPendingOrders();
   };
 
   const renderTripInfo = () => {
@@ -112,7 +266,6 @@ const HomeScreen = () => {
     }
 
     if (tripFinished) {
-      // Mostrar mensaje de viaje completado
       return (
         <View style={styles.emptyTripContainer}>
           <Text style={styles.emptyTripText}>Trip completed successfully</Text>
@@ -126,47 +279,52 @@ const HomeScreen = () => {
         </View>
       );
     } else if (!onTrip) {
-      // Mostrar planificación del viaje
       return (
         <ScrollView 
           style={styles.tripInfoContainer}
           contentContainerStyle={styles.scrollContent}
         >
           <Text style={styles.routeName}>{route?.name}</Text>
-          <Text style={styles.sectionTitle}>Trip schedule</Text>
-          {stops.map((stop, index) => (
-            <View key={stop.id} style={styles.stopCard}>
-              <Text style={styles.stopNumber}>Stop #{index + 1}</Text>
-              <Text style={styles.storeName}>{stop.storeName}</Text>
-              <Text style={styles.stopAddress}>{stop.address}</Text>
-              <Text style={styles.stopDetails}>Phone: {stop.phone}</Text>
-            </View>
-          ))}
+          <Text style={styles.sectionTitle}>Pending deliveries ({stops.length})</Text>
+          {stops.length > 0 ? (
+            stops.map((stop, index) => (
+              <View key={stop.id} style={styles.stopCard}>
+                <Text style={styles.stopNumber}>Delivery #{index + 1}</Text>
+                <Text style={styles.storeName}>{stop.storeName}</Text>
+                <Text style={styles.stopAddress}>{stop.address}</Text>
+                <Text style={styles.stopDetails}>Phone: {stop.phone}</Text>
+                <Text style={styles.orderNumber}>Order: {stop.orderNumber}</Text>
+                <Text style={styles.deliveryDate}>
+                  Deliver by: {new Date(stop.orderDetails.deliverDate).toLocaleDateString()}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noStopsText}>No pending deliveries for your route</Text>
+          )}
         </ScrollView>
       );
     } else {
-      // Mostrar progreso del viaje
-      const completedStops = stops
-        .slice(0, currentStopIndex)
-        .reverse();
+      const completedStops = stops.slice(0, currentStopIndex).reverse();
 
       return (
         <ScrollView style={styles.tripProgressContainer}>
           <Text style={styles.routeName}>{route?.name}</Text>
-          <Text style={styles.sectionTitle}>Current Stop</Text>
+          <Text style={styles.sectionTitle}>Current Delivery</Text>
           <View style={[styles.stopCard, styles.currentStopCard]}>
-            <Text style={styles.stopNumber}>Stop #{currentStopIndex + 1}</Text>
+            <Text style={styles.stopNumber}>Delivery #{currentStopIndex + 1}</Text>
             <Text style={styles.storeName}>{stops[currentStopIndex].storeName}</Text>
             <Text style={styles.stopAddress}>{stops[currentStopIndex].address}</Text>
             <Text style={styles.stopDetails}>Phone: {stops[currentStopIndex].phone}</Text>
+            <Text style={styles.orderNumber}>Order: {stops[currentStopIndex].orderNumber}</Text>
           </View>
 
           {currentStopIndex > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Completed stops</Text>
+              <Text style={styles.sectionTitle}>Completed deliveries</Text>
               {completedStops.map((stop, index) => (
                 <View key={stop.id} style={[styles.stopCard, styles.completedStopCard]}>
-                  <Text style={styles.stopNumber}>Stop ✓</Text>
+                  <Text style={styles.stopNumber}>Delivery ✓</Text>
                   <Text style={styles.storeName}>{stop.storeName}</Text>
                   <Text style={styles.stopAddress}>{stop.address}</Text>
                 </View>
@@ -181,8 +339,8 @@ const HomeScreen = () => {
   const getButtonText = () => {
     if (loading) return "LOADING...";
     if (tripFinished) return "TRIP COMPLETED";
-    if (!onTrip) return "START TRIP";
-    return currentStopIndex < stops.length - 1 ? "NEXT STOP" : "FINISH TRIP";
+    if (!onTrip) return stops.length > 0 ? "START DELIVERIES" : "NO PENDING DELIVERIES";
+    return currentStopIndex < stops.length - 1 ? "NEXT DELIVERY" : "COMPLETE TRIP";
   };
 
   return (
@@ -192,17 +350,21 @@ const HomeScreen = () => {
         <TouchableOpacity 
           style={[
             styles.button, 
-            (tripFinished || loading || stops.length === 0) && styles.disabledButton
+            (tripFinished || loading || stops.length === 0 || buttonLoading) && styles.disabledButton
           ]} 
           onPress={handleTrip}
-          disabled={tripFinished || loading || stops.length === 0}
+          disabled={tripFinished || loading || stops.length === 0 || buttonLoading}
         >
-          <Text style={[
-            styles.buttonText,
-            (tripFinished || loading || stops.length === 0) && styles.disabledButtonText
-          ]}>
-            {getButtonText()}
-          </Text>
+          {buttonLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={[
+              styles.buttonText,
+              (tripFinished || loading || stops.length === 0) && styles.disabledButtonText
+            ]}>
+              {getButtonText()}
+            </Text>
+          )}
         </TouchableOpacity>
 
         {renderTripInfo()}
@@ -342,6 +504,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  orderNumber: {
+    fontSize: 12,
+    color: '#0277BD',
+    marginTop: 4,
+    fontWeight: '600'
+  },
+  deliveryDate: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+    fontStyle: 'italic'
+  },
+  noStopsText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#666',
+    fontSize: 16
+  }
 });
 
 export default HomeScreen;
