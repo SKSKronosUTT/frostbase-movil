@@ -32,10 +32,12 @@ const AnalyticsScreen = () => {
       
       const result = await response.json();
       
-      // Filtrar y ordenar datos
+      // Filtrar, ordenar y obtener solo las 10 más recientes
       const filteredData = result.data
         .filter(reading => reading.truck.id === user.truckData.id)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+        .sort((a, b) => new Date(b.date) - new Date(a.date)) // Orden descendente
+        .slice(0, 12) // Tomar solo las 10 más recientes
+        .reverse(); // Revertir para mostrar de más viejo a más reciente en el gráfico
       
       setReadings(filteredData);
       setLoading(false);
@@ -53,16 +55,20 @@ const AnalyticsScreen = () => {
     // Configurar intervalo para actualizaciones periódicas
     const intervalId = setInterval(() => {
       fetchData();
-    }, 2000); // Actualizar cada 2 segundos
+    }, 10000); // Actualizar cada 2 segundos
 
     // Limpiar intervalo al desmontar el componente
     return () => clearInterval(intervalId);
   }, [user.truckData.id]);
 
   const prepareChartData = () => {
-    const labels = readings.map(reading => 
-      new Date(reading.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    );
+    // Formatear etiquetas para mostrar solo horas o cada X etiquetas
+    const labels = readings.map((reading, index) => {
+      // Mostrar solo cada 2 etiquetas o personalizar según necesidad
+      return index % 2 === 0 ? 
+        new Date(reading.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
+        '';
+    });
     
     return {
       labels,
@@ -95,6 +101,9 @@ const AnalyticsScreen = () => {
       r: '4',
       strokeWidth: '2',
       stroke: '#89B6DD'
+    },
+    propsForLabels: {
+      fontSize: 10 // Reducir tamaño de fuente para mejor ajuste
     }
   };
 

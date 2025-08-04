@@ -22,14 +22,20 @@ const ProfileScreen = ({ navigation }) => {
             case 'Scania':
                 setLogo(require('../assets/trucks/scania.png'));
                 break;
-            case 'MAN':
-                setLogo(require('../assets/trucks/man.png'));
+            case 'Freightliner':
+                setLogo(require('../assets/trucks/freightliner.png'));
                 break;
-            case 'DAF':
-                setLogo(require('../assets/trucks/daf.png'));
+            case 'International':
+                setLogo(require('../assets/trucks/international.png'));
                 break;
-            case 'Iveco':
-                setLogo(require('../assets/trucks/iveco.png'));
+            case 'Kenworth':
+                setLogo(require('../assets/trucks/kenworth.png'));
+                break;
+            case 'Mack':
+                setLogo(require('../assets/trucks/mack.png'));
+                break;
+            case 'Peterbilt':
+                setLogo(require('../assets/trucks/peterbilt.png'));
                 break;
         
             default:
@@ -127,8 +133,9 @@ const styles = StyleSheet.create({
     },
     brand:{
         marginTop: 50,
-        width: 100,
-        height: 100,
+        width: 150,
+        height: 150,
+        resizeMode: 'contain'
     },
     text:{
         fontWeight: 'bold',
