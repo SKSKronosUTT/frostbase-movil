@@ -24,7 +24,9 @@ const AnalyticsScreen = () => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch(api.url + 'Reading');
+      // const response = await fetch(api.url + 'Reading');
+      const response = await fetch(api.url + 'Reading/Truck/' + user.truckData.id + '?truckId=' + user.truckData.id);
+
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -34,7 +36,6 @@ const AnalyticsScreen = () => {
       
       // Filtrar, ordenar y obtener solo las 10 más recientes
       const filteredData = result.data
-        .filter(reading => reading.truck.id === user.truckData.id)
         .sort((a, b) => new Date(b.date) - new Date(a.date)) // Orden descendente
         .slice(0, 12) // Tomar solo las 10 más recientes
         .reverse(); // Revertir para mostrar de más viejo a más reciente en el gráfico

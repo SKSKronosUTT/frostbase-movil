@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   View, 
   Text, 
@@ -6,7 +6,8 @@ import {
   TouchableOpacity, 
   ScrollView,
   ActivityIndicator,
-  Alert 
+  Alert,
+  RefreshControl
 } from "react-native";
 import Header from "../components/Header";
 import { useUser } from "../context/UserContext";
@@ -22,6 +23,7 @@ const HomeScreen = () => {
   const [route, setRoute] = useState(null);
   const [currentTripId, setCurrentTripId] = useState(null);
   const [buttonLoading, setButtonLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Obtener órdenes pendientes
   const fetchPendingOrders = async () => {
@@ -137,76 +139,120 @@ const HomeScreen = () => {
   };
 
   // Obtener ruta y combinar con órdenes pendientes
-  const fetchRouteWithPendingOrders = async () => {
+const fetchRouteWithPendingOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const [routesResponse, pendingOrders] = await Promise.all([
-        fetch(api.url + 'Route'),
+      // Obtener la ruta específica del conductor y órdenes pendientes en paralelo
+      const [routeResponse, pendingOrders] = await Promise.all([
+        fetch(`${api.url}Route/driver/${user.id}`),
         fetchPendingOrders()
       ]);
 
-      if (!routesResponse.ok) throw new Error(`HTTP error! status: ${routesResponse.status}`);
+      // Verificar respuesta de la ruta
+      if (!routeResponse.ok) throw new Error(`HTTP error! status: ${routeResponse.status}`);
       
-      const routesData = await routesResponse.json();
+      const routeData = await routeResponse.json();
       
-      if (routesData.status === 0 && routesData.data.length > 0) {
-        const driverRoute = routesData.data.find(r => r.driver.id === user.id);
+      // Si hay datos de ruta
+      if (routeData.status === 0 && routeData.data) {
+        const driverRoute = routeData.data;
+        setRoute(driverRoute);
         
-        if (driverRoute) {
-          setRoute(driverRoute);
-          
-          const routeStoreIds = driverRoute.stores.map(store => store.store.id);
-          const routePendingOrders = pendingOrders.filter(order => 
-            routeStoreIds.includes(order.store.id)
-          );
+        // Obtener IDs de tiendas en la ruta
+        const routeStoreIds = driverRoute.stores.map(store => store.store.id);
+        
+        // Filtrar órdenes pendientes que pertenecen a esta ruta
+        const routePendingOrders = pendingOrders.filter(order => 
+          routeStoreIds.includes(order.store.id)
+        );
 
-          const stopsWithPendingOrders = driverRoute.stores
-            .filter(store => 
-              pendingOrders.some(order => order.store.id === store.store.id)
-            )
-            .sort((a, b) => a.sequence - b.sequence)
-            .map((stop, index) => {
-              const order = pendingOrders.find(o => o.store.id === stop.store.id);
-              return {
-                id: stop.store.id,
-                address: stop.store.location.address,
-                storeName: stop.store.name,
-                phone: stop.store.phone,
-                latitude: stop.store.location.latitude,
-                longitude: stop.store.location.longitude,
-                orderNumber: order ? order.id : `STOP-${index + 1}`,
-                status: "pending",
-                orderDetails: order
-              };
-            });
-          
-          setStops(stopsWithPendingOrders);
-          
-          if (stopsWithPendingOrders.length === 0) {
-            Alert.alert("Info", "No pending orders for your route");
-          }
-        } else {
-          Alert.alert("Info", "You don't have an assigned Route");
+        // Crear paradas con órdenes pendientes
+        const stopsWithPendingOrders = driverRoute.stores
+          .filter(store => 
+            pendingOrders.some(order => order.store.id === store.store.id)
+          )
+          .sort((a, b) => a.sequence - b.sequence)
+          .map((stop, index) => {
+            const order = pendingOrders.find(o => o.store.id === stop.store.id);
+            return {
+              id: stop.store.id,
+              address: stop.store.location.address,
+              storeName: stop.store.name,
+              phone: stop.store.phone,
+              latitude: stop.store.location.latitude,
+              longitude: stop.store.location.longitude,
+              orderNumber: order ? order.id : `STOP-${index + 1}`,
+              status: "pending",
+              orderDetails: order
+            };
+          });
+        
+        setStops(stopsWithPendingOrders);
+        
+        if (stopsWithPendingOrders.length === 0) {
+          Alert.alert("Info", "No pending orders for your route");
         }
+      } else {
+        Alert.alert("Info", "You don't have an assigned Route");
       }
     } catch (error) {
       console.error("Error:", error);
       Alert.alert("Error", "Couldn't get route information");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, [user.id]);
 
   useEffect(() => {
     fetchRouteWithPendingOrders();
-  }, [user.id]);
+  }, [fetchRouteWithPendingOrders]);
 
+  // Función para manejar el refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchRouteWithPendingOrders();
+  }, [fetchRouteWithPendingOrders]);
+
+  const updateTruckStatus = async (status) => {
+    try {
+      const response = await fetch(`${api.url}Truck`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: user.truckData.id,
+          brand: user.truckData.brand,
+          model: user.truckData.model,
+          licensePlate: user.truckData.licensePlate,
+          idStateTruck: status
+        })
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const responseData = await response.json();
+      
+      if (responseData.status !== 0) {
+        throw new Error(responseData.message || "Failed to update truck status");
+      }
+    } catch (error) {
+      console.error("Error updating truck status:", error);
+      Alert.alert("Error", "Couldn't update truck status");
+      throw error;
+    }
+  };
+
+  // Modificar la función handleTrip para incluir el cambio de estado
   const handleTrip = async () => {
     if (buttonLoading) return;
     setButtonLoading(true);
 
-   try {
+    try {
       if (!onTrip && !tripFinished) {
+        // Iniciar viaje - cambiar estado a "In Route" (IR)
+        await updateTruckStatus("IR");
         const tripId = await startTripInBackend();
         if (stops.length > 0) {
           await startOrderInBackend(tripId, stops[0].orderDetails.id);
@@ -220,7 +266,6 @@ const HomeScreen = () => {
         const updatedStops = [...stops];
         updatedStops[currentStopIndex].status = "completed";
         setStops(updatedStops);
-        
         if (currentStopIndex < stops.length - 1) {
           const nextOrderId = stops[currentStopIndex + 1].orderDetails.id;
           await startOrderInBackend(currentTripId, nextOrderId);
@@ -233,13 +278,15 @@ const HomeScreen = () => {
       console.error("Error:", error);
       Alert.alert("Error", "Operation failed. Please try again.");
     } finally {
-      setButtonLoading(false); // Siempre desactivamos el estado de carga al final
+      setButtonLoading(false);
     }
   };
 
+  // Modificar finishTrip para cambiar estado a "Available" (AV)
   const finishTrip = async () => {
     try {
       await endTripInBackend(currentTripId);
+      await updateTruckStatus("AV");
       
       setOnTrip(false);
       setTripFinished(true);
@@ -251,13 +298,20 @@ const HomeScreen = () => {
     }
   };
 
-  const startNewTrip = () => {
-    setTripFinished(false);
-    fetchRouteWithPendingOrders();
+  // Modificar startNewTrip para asegurar estado correcto
+  const startNewTrip = async () => {
+    try {
+      // Asegurarse que el camión está disponible antes de nuevo viaje
+      await updateTruckStatus("AV");
+      setTripFinished(false);
+      await fetchRouteWithPendingOrders();
+    } catch (error) {
+      console.error("Error starting new trip:", error);
+    }
   };
 
-  const renderTripInfo = () => {
-    if (loading) {
+ const renderTripInfo = () => {
+    if (loading && !refreshing) {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#21BEBA" />
@@ -267,7 +321,17 @@ const HomeScreen = () => {
 
     if (tripFinished) {
       return (
-        <View style={styles.emptyTripContainer}>
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#21BEBA']}
+              tintColor="#21BEBA"
+            />
+          }
+          contentContainerStyle={styles.emptyTripContainer}
+        >
           <Text style={styles.emptyTripText}>Trip completed successfully</Text>
           <Text style={styles.routeName}>{route?.name}</Text>
           <TouchableOpacity 
@@ -276,13 +340,21 @@ const HomeScreen = () => {
           >
             <Text style={styles.newTripButtonText}>Start new trip</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       );
     } else if (!onTrip) {
       return (
         <ScrollView 
           style={styles.tripInfoContainer}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#21BEBA']}
+              tintColor="#21BEBA"
+            />
+          }
         >
           <Text style={styles.routeName}>{route?.name}</Text>
           <Text style={styles.sectionTitle}>Pending deliveries ({stops.length})</Text>
@@ -308,7 +380,17 @@ const HomeScreen = () => {
       const completedStops = stops.slice(0, currentStopIndex).reverse();
 
       return (
-        <ScrollView style={styles.tripProgressContainer}>
+        <ScrollView 
+          style={styles.tripProgressContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#21BEBA']}
+              tintColor="#21BEBA"
+            />
+          }
+        >
           <Text style={styles.routeName}>{route?.name}</Text>
           <Text style={styles.sectionTitle}>Current Delivery</Text>
           <View style={[styles.stopCard, styles.currentStopCard]}>

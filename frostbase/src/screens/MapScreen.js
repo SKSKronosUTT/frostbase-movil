@@ -28,7 +28,9 @@ const MapScreen = () => {
 
   const fetchTruckLocation = async () => {
     try {
-      const response = await fetch(api.url + 'Reading');
+      //const response = await fetch(api.url + 'Reading');
+      // const response = await fetch(api.url + 'Reading/Truck/' + user.truckData.id + '?truckId=' + user.truckData.id);
+      const response = await fetch(api.url + 'Reading/Latest/Truck/' + user.truckData.id);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -37,11 +39,9 @@ const MapScreen = () => {
       const result = await response.json();
       
       // Filtrar lecturas para nuestro camión y ordenar por fecha
-      const truckReadings = result.data
-        .filter(reading => reading.truck.id === user.truckData.id)
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
-      if (truckReadings.length > 0) {
-        const latestReading = truckReadings[0];
+      const truckReadings = result
+      if (truckReadings) {
+        const latestReading = truckReadings;
         setTruckLocation({
           latitude: latestReading.location.latitude,
           longitude: latestReading.location.longitude

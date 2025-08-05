@@ -49,6 +49,7 @@ const LoginScreen = ({ navigation }) => {
                         email: data.data.email,
                         name: data.data.name.fullName,
                         phone: data.data.phone,
+                        birthDate: data.data.birthDate,
                         isAdmin: data.data.isAdmin,
                         truckData: {
                             id: data.data.truckDefault.id,
@@ -70,7 +71,10 @@ const LoginScreen = ({ navigation }) => {
                     Alert.alert("Error", data.error || "Wrong credentials");
                 }
             } else {
-                Alert.alert("Error", data.error || "Server error");
+                if (data.message == "Error ocurred: Email or Password incorrect") 
+                    Alert.alert("Error", data.error || "Wrong credentials");
+                else
+                    Alert.alert("Error", data.error || "Server error");
             }
         } catch (error) {
             console.error("Login error:", error);

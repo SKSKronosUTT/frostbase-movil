@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
   ScrollView, 
   StyleSheet, 
-  ActivityIndicator 
+  ActivityIndicator,
+  RefreshControl 
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Header from '../components/Header';
@@ -16,6 +17,7 @@ const HistoryScreen = () => {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Función para formatear la fecha
   const formatDate = (dateString) => {
@@ -29,41 +31,53 @@ const HistoryScreen = () => {
     return new Date(dateString).toLocaleTimeString('es-MX', options);
   };
 
-  useEffect(() => {
-    const fetchTrips = async () => {
-      try {
-        const response = await fetch(api.url + 'Trip');
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.status === 0) {
-          // Filtrar viajes completados por el conductor actual
-          const completedTrips = data.data.filter(trip => 
+  // Función para cargar los viajes
+  const fetchTrips = useCallback(async () => {
+    try {
+      const response = await fetch(api.url + 'Trip');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.status === 0) {
+        // Filtrar y ordenar viajes completados por el conductor actual
+        const completedTrips = data.data
+          .filter(trip => 
             trip.driver.id === user.id && 
             trip.state.id === 'CP' // Completed trips
+          )
+          .sort((a, b) => 
+            new Date(b.tripTime.endTime) - new Date(a.tripTime.endTime)
           );
-          
-          setTrips(completedTrips);
-        } else {
-          setError("Error al obtener los viajes");
-        }
-      } catch (err) {
-        console.error("Error fetching trips:", err);
-        setError("Could not connect to server");
-      } finally {
-        setLoading(false);
+        
+        setTrips(completedTrips);
+      } else {
+        setError("Error al obtener los viajes");
       }
-    };
-
-    fetchTrips();
+    } catch (err) {
+      console.error("Error fetching trips:", err);
+      setError("Could not connect to server");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [user.id]);
 
+  // Cargar datos iniciales
+  useEffect(() => {
+    fetchTrips();
+  }, [fetchTrips]);
+
+  // Función para manejar el refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchTrips();
+  }, [fetchTrips]);
+
   const TransactionCard = ({ trip }) => {
-    // Tomamos la primera orden para mostrar información de la tienda
     const firstOrder = trip.orders[0];
     const startDate = formatDate(trip.tripTime.startTime);
     const startTime = formatTime(trip.tripTime.startTime);
@@ -103,7 +117,7 @@ const HistoryScreen = () => {
     );
   };
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={styles.container}>
         <Header />
@@ -120,6 +134,13 @@ const HistoryScreen = () => {
         <Header />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
+          <Feather 
+            name="refresh-cw" 
+            size={24} 
+            color="#0277BD" 
+            onPress={onRefresh}
+            style={{ marginTop: 10 }}
+          />
         </View>
       </View>
     );
@@ -132,9 +153,26 @@ const HistoryScreen = () => {
         <View style={styles.emptyContainer}>
           <Feather name="calendar" size={48} color="#B3C5F7" />
           <Text style={styles.emptyText}>You do not have completed trips.</Text>
+          <Feather 
+            name="refresh-cw" 
+            size={24} 
+            color="#0277BD" 
+            onPress={onRefresh}
+            style={{ marginTop: 20 }}
+          />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.transactionsList}>
+        <ScrollView 
+          contentContainerStyle={styles.transactionsList}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#0277BD']}
+              tintColor="#0277BD"
+            />
+          }
+        >
           {trips.map((trip) => (
             <TransactionCard key={trip.id} trip={trip} />
           ))}
@@ -144,6 +182,7 @@ const HistoryScreen = () => {
   );
 };
 
+// Tus estilos permanecen igual...
 const styles = StyleSheet.create({
   container: {
     flex: 1,
